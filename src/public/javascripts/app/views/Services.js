@@ -4,9 +4,10 @@ define(["backbone", "d3"], function(Backbone, d3) {
         id: 'vis',
         initialize: function () {
             this.vis = d3.select(this.el);
+            $('#vis-cont').append(this.el);
         },
         getModulePositionX: function(d) {
-          return d.get("id") * 100;
+            return d.get("id") * 100;
         },
         getModulePositionY: function(d) {
             return d.get("id") * 100;
@@ -22,7 +23,7 @@ define(["backbone", "d3"], function(Backbone, d3) {
                 fill = d3.scale.category10(),
                 nodes = self.collection.models;
 
-            var vis = this.vis.append("svg:svg")
+            var vis = d3.select("body").append("svg:svg")
                 .attr("width", w)
                 .attr("height", h);
 
@@ -48,6 +49,15 @@ define(["backbone", "d3"], function(Backbone, d3) {
                 .call(force.drag);
 
 
+            var test = vis.selectAll(".test")
+                .data(nodes)
+                .enter().append("svg:circle")
+                .attr("class", "node")
+                .attr("cx", function(d) { return d.x; })
+                .attr("cy", function(d) { return d.y; })
+                .attr("r", 50)
+                .call(force.drag);
+
 
             module
                 .append("svg:circle")
@@ -65,21 +75,17 @@ define(["backbone", "d3"], function(Backbone, d3) {
             module
                 .on("mouseover", function(e) {
                     vis.selectAll("circle")
-                        .attr("opacity", 0.5)
                         .select(function(d) {
-                           return d.index === e.index ? this : null;
+                            return d.index === e.index ? this : null;
                         })
-                        .attr("opacity", 1)
                         .transition()
                         .duration(200)
-//                        .attr("r", 150)
-                        .style("stroke-width", 3);
+                        .style("stroke-width", 3);;
 
 
                 })
                 .on("mouseout", function(e) {
                     vis.selectAll("circle")
-                        .attr("opacity", 1)
                         .select(function(d) {
                             return d.index === e.index ? this : null;
                         })
@@ -96,6 +102,8 @@ define(["backbone", "d3"], function(Backbone, d3) {
             force.on("tick", function(e) {
 
                 module.attr("transform", function(d) { return "translate(" + d.x + "," + d.y + ")"; });
+
+                test.attr("transform", function(d) { return "translate(" + d.x + "," + d.y + ")"; });
 //                // Push different nodes in different directions for clustering.
 //                var k = 6 * e.alpha;
 //                nodes.forEach(function(o, i) {
