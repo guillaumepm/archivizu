@@ -5,6 +5,7 @@
     "private": true,
     "dependencies": {
         "restify": "1.4.4",
-        "backbone": "*"
+        "backbone": "*",
+        "assert-plus": "*"
     }
 }

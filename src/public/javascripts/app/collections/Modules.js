@@ -4,7 +4,8 @@ define(["backbone", "models/Module"], function(Backbone, Module_model) {
         model: Module_model,
         initialize: function() {
 
-        }
+        },
+        url: "http://localhost:8089/module"
     });
 
 });
