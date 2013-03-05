@@ -1,9 +1,51 @@
-define(["backbone", "d3"], function(Backbone, d3) {
+define(["backbone", "underscore", "d3"], function(Backbone, _, d3) {
 
     return Backbone.View.extend({
         id: 'vis',
         initialize: function () {
-            this.vis = d3.select(this.el);
+            var self = this;
+
+            self.vis = d3.select(this.el);
+            self.servicesCollection = this.options.services;
+            self.servicesData = self.servicesCollection.models;
+            self.modulesCollection = self.collection;
+            self.modulesData = self.modulesCollection.models;
+
+            self.config = {
+                w: 960,
+                h: 500,
+                fill: d3.scale.category10()
+            };
+
+
+            self.monitor = self.vis.append("svg:svg")
+                .attr("width", self.config.w)
+                .attr("height", self.config.h);
+
+
+            self.force = d3.layout.force()
+                .nodes(_.union(self.modulesData, self.servicesData))
+//                .links([{source: 0, target: 3}])
+                .gravity(.05)
+                .distance(300)
+                .charge(-300)
+                .size([self.config.w, self.config.h])
+
+
+            self.linksData = [{
+                source: self.modulesCollection.where({
+                    name: "Login"
+                })[0],
+                target: self.servicesCollection.where({
+                    name: "getUsage"
+                })[0]
+            }];
+
+
+
+            window.force = self.force;
+
+
         },
         getModulePositionX: function(d) {
           return d.get("id") * 100;
@@ -14,57 +56,69 @@ define(["backbone", "d3"], function(Backbone, d3) {
         getName: function(d) {
             return d.get("name")
         },
-        render: function() {
+        renderServices: function() {
 
             var self = this;
-            var w = 960,
-                h = 500,
-                fill = d3.scale.category10(),
-                nodes = self.collection.models;
 
-            var vis = this.vis.append("svg:svg")
-                .attr("width", w)
-                .attr("height", h);
-
-            var force = d3.layout.force()
-                .nodes(nodes)
-                .links([])
-
-                .gravity(.05)
-                .distance(300)
-                .charge(-300)
-                .size([w, h])
-                .start();
+            self.services = self.monitor.selectAll(".service")
+                .data(self.servicesData)
+                .enter()
+                .append("g")
+                .attr("cx", function(d) { return d.x; })
+                .attr("cy", function(d) { return d.y; })
+                .attr("r", 150)
+                .call(self.force.drag);
 
 
+            self.services
+                .append("rect")
+                .attr("class", "service")
+                .attr("width", 200)
+                .attr("height", 50)
+                .attr("y", function(d, i) { return (i+1) * 55 })
+                .style("fill", "white")
+                .style("stroke", "blue")
+                .style("stroke-width", 5);
 
-            var module = vis.selectAll(".node")
-                .data(nodes)
+            self.services
+                .append("text")
+                .text(function(d){ return d.get("name")})
+
+
+        },
+        renderModules: function() {
+
+            var self = this;
+
+
+
+            self.modules = self.monitor.selectAll(".node")
+                .data(self.modulesData)
                 .enter().append("g")
                 .attr("class", "node")
                 .attr("cx", function(d) { return d.x; })
                 .attr("cy", function(d) { return d.y; })
                 .attr("r", 150)
-                .call(force.drag);
+                .call(self.force.drag);
 
 
 
-            module
+            self.modules
                 .append("svg:circle")
                 .attr("class", "node")
                 .attr("r", 50)
-                .style("fill", function(d, i) { return fill(i & 3); })
-                .style("stroke", function(d, i) { return d3.rgb(fill(i & 3)).darker(2); })
+                .style("fill", function(d, i) { return self.config.fill(i & 3); })
+                .style("stroke", function(d, i) { return d3.rgb(self.config.fill(i & 3)).darker(2); })
                 .style("stroke-width", 1.5);
 
-            module
+            self.modules
                 .append("text")
                 .text(function(d) {return d.get("name");})
 
 
-            module
+            self.modules
                 .on("mouseover", function(e) {
-                    vis.selectAll("circle")
+                    self.monitor.selectAll("circle")
                         .attr("opacity", 0.5)
                         .select(function(d) {
                            return d.index === e.index ? this : null;
@@ -75,10 +129,18 @@ define(["backbone", "d3"], function(Backbone, d3) {
 //                        .attr("r", 150)
                         .style("stroke-width", 3);
 
+                    self.services
+                        .select(function(d) {
+                            return d.name === e.service ? this : null;
+                        })
+                        .transition()
+                        .duration(500)
+                        .attr("r", 200);
+
 
                 })
                 .on("mouseout", function(e) {
-                    vis.selectAll("circle")
+                    self.monitor.selectAll("circle")
                         .attr("opacity", 1)
                         .select(function(d) {
                             return d.index === e.index ? this : null;
@@ -88,31 +150,46 @@ define(["backbone", "d3"], function(Backbone, d3) {
                         .style("stroke-width", 1.5);
                 });
 
-            vis.style("opacity", 1e-6)
+            self.monitor.style("opacity", 1e-6)
                 .transition()
                 .duration(1000)
                 .style("opacity", 1);
 
-            force.on("tick", function(e) {
 
-                module.attr("transform", function(d) { return "translate(" + d.x + "," + d.y + ")"; });
-//                // Push different nodes in different directions for clustering.
-//                var k = 6 * e.alpha;
-//                nodes.forEach(function(o, i) {
-//                    o.y += i & 1 ? k : -k;
-//                    o.x += i & 2 ? k : -k;
-//                });
+        },
+        render: function() {
+            var self = this;
+
+
+
+            self.renderServices();
+            self.renderModules();
+
+            self.force
+                .links(self.linksData)
+                .linkStrength(0)
+                .start();
+
+            self.links = self.monitor.selectAll("line")
+                .data(self.linksData)
+                .enter().append("line")
+                .attr("fill", "#000000")
+                .attr("x1", function(d) { return d.source.x; })
+                .attr("y1", function(d) { return d.source.y; })
+                .attr("x2", function(d) { return d.target.x; })
+                .attr("y2", function(d) { return d.target.y; });
 //
-//                module.attr("cx", function(d) { return d.x; })
-//                    .attr("cy", function(d) { return d.y; });
+            self.force.on("tick", function(e) {
+                self.modules.attr("transform", function(d) { return "translate(" + d.x + "," + d.y + ")"; });
+                self.services.attr("transform", function(d) { return "translate(" + d.x + "," + d.y + ")"; });
             });
 
             d3.select("body").on("click", function() {
-                nodes.forEach(function(o, i) {
+                self.modules.forEach(function(o, i) {
                     o.x += (Math.random() - .5) * 40;
                     o.y += (Math.random() - .5) * 40;
                 });
-                force.resume();
+                self.force.resume();
             });
 
         }

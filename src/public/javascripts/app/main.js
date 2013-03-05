@@ -4,8 +4,20 @@ require([
     "backbone",
     "d3",
     "collections/Modules",
+    "collections/Services",
     "views/Application"
-], function($, _, Backbone, d3, Modules_collection, Application_view) {
+], function($, _, Backbone, d3, Modules_collection, Services_collection, Application_view) {
+
+    var services_collection = new Modules_collection([{
+        id: 1,
+        name: "Login",
+        description: "Login interface for users"
+    }, {
+        id: 2,
+        name: "getUsage",
+        description: "Usage meters for service level users"
+    }]);
+
 
     var modules_collection = new Modules_collection([{
         id: 1,
@@ -14,7 +26,8 @@ require([
     }, {
         id: 2,
         name: "Usage",
-        description: "Usage meters for service level users"
+        description: "Usage meters for service level users",
+        service: "getUsage"
     },{
         id: 3,
         name: "Service selector",
@@ -33,15 +46,16 @@ require([
         description: "Usage meters for service level users"
     }]);
 
-    console.log(modules_collection);
     var application_view = new Application_view({
         el: "#main",
-        collection: modules_collection
+        collection: modules_collection,
+        services: services_collection
     });
 
     window.c = modules_collection;
 
 
     application_view.render();
+//    application_view.renderServices();
 
 });
