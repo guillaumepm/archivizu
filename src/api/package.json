@@ -1,0 +1,10 @@
+{
+    "name": "MonitorAPI",
+    "version": "0.0.1",
+    "description": "Does stuff for our screen",
+    "private": true,
+    "dependencies": {
+        "restify": "1.4.4",
+        "backbone": "*"
+    }
+}
