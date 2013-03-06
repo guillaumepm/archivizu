@@ -6,6 +6,8 @@
     "dependencies": {
         "restify": "1.4.4",
         "backbone": "*",
-        "connect": "*"
+        "connect": "*",
+        "assert-plus": "*",
+        "xml2json": "*"
     }
 }
