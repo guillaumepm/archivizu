@@ -4,6 +4,7 @@ var assert = require('assert-plus');
 var restify = require("restify"),
     Backbone = require("backbone");
 //    Module = require("../public/javascripts/app/modules/Module");
+var xmlParser = require("xml2json");
 var Log = require('util');
 var server = restify.createServer({
 
@@ -232,39 +233,103 @@ function getModel(req, res, next) {
 function loadModules(req, res, next) {
     req.log.info('Loading modules...');
     Log.log('cLoading modules...');
-//    fs.readFile(req.dir + '/allModules.js', 'utf8', function (err, data) {
-//        if (err) {
-//            console.log('Error: ' + err);
-//            return;
-//        }
-//
-//        req.modules = JSON.parse(data);
-//        Log.log(data);
-//    });
     req.modules = require('./myData/allModules.json');
     Log.log(req.modules);
     console.log(req.modules);
     next();
-//    fs.readdir(req.dir, function (err, files) {
-//        if (err) {
-//            req.log.warn(err,
-//                'loadModules: unable to read %s',
-//                req.dir);
-//            next(err);
-//        } else {
-//            req.modules = files;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+/**
+ * Loads up all the stored TODOs from our "database". Most of the downstream
+ * handlers look for these and do some amount of enforcement on what's there.
+ */
+function loadServices(req, res, next) {
+    req.log.info('Loading services...');
+    Log.log('cLoading services...');
+    req.services = '';
+    fs.readFile('./myData/allServices.xml', 'utf8', function (err, data) {
+        if (err) {
+            req.log.warn(err, 'get: unable to read %s', req.container);
+            next(err);
+            return;
+        }
+
+//        Log.log(xmlParser.toJson(data));
+        fs.writeFile('./myData/allServices.json', JSON.stringify(getTransformedXmlAsJSON(data)), function (err) {
+            if (err) {
+                req.log.warn(err, 'createTodo: unable to save');
+                next(err);
+            } else {
+                Log.log("Loading allServices.json");
+                req.services = require('./myData/allServices.json');
+                next();
+            }
+        });
+    });
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+function getTransformedXmlAsJSON(data) {
+    var inJson = xmlParser.toJson(data, {object: true});
+    var outJson = new Array();
+    var loop = 0;
+    inJson.deploymentArchitecture.Cluster.forEach(function(cluster) {
+        if (cluster.AppServer.WebService instanceof Array) {
+            cluster.AppServer.WebService.forEach(function(webService) {
+                if (webService.Operation instanceof Array) {
+                    webService.Operation.forEach(function(operation) {
+                        loop++;
+//                        if (loop++ < 10) {
+                        outJson.push({
+                            id: loop,
+                            belongsTo: webService.name,
+                            name: operation.name
+                        });
+//                        }
+//                        Log.log("new line:");
+//                        Log.log(JSON.stringify(operation));
+                    });
+                }
+            });
+        }
+//        outJson.push({
 //
-//            if (req.params.name)
-//                req.container = req.dir + '/' + req.params.name;
-//
-//            req.log.debug({
-//                module: req.module,
-//                modules: req.modules
-//            }, 'loadModules: done');
-//
-//            next();
-//        }
-//    });
+//        })
+    });
+    Log.log(JSON.stringify(outJson));
+    return outJson;
 }
 
 
@@ -281,6 +346,15 @@ function listModules(req, res, next) {
     next();
 }
 
+
+function listServices(req, res, next) {
+    req.log.info('List services...');
+    Log.log('cList services...');
+//    assert.arrayOfObjects(req.modules, 'req.modules');
+
+    res.send(200, req.services);
+    next();
+}
 
 
 
@@ -321,6 +395,8 @@ server.head('/container/:name', getContainer);
 
 //-- Modules
 server.use(loadModules);
+server.use(loadServices);
+server.get('/service', listServices);
 
 server.get('/module', listModules);
 server.head('/module', listModules);
@@ -341,7 +417,9 @@ server.get('/', function root(req, res, next) {
         'GET /container',
         'GET /container/:name',
         'GET /module',
-        'GET /module/:name'
+        'GET /module/:name',
+        'GET /service',
+        'GET /service/:name'
     ];
     res.send(200, routes);
     next();
@@ -351,3 +429,4 @@ Log.log('starting server...');
 server.listen("8089", function() {
     console.log('%s listening at %s', server.name, server.url);
 });
+

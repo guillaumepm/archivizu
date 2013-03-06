@@ -4,10 +4,11 @@ define(["backbone"], function(Backbone) {
         initialize: function() {
 
         },
-        defaults: {
-            service: ""
-
-        }
+        url: "http://localhost:8089/service"
+//        defaults: {
+//            service: ""
+//
+//        }
     });
 
 });
