@@ -1,0 +1,30 @@
+[{
+    "id": 1,
+    "name": "Login",
+    "description": "Login interface for users"
+}, {
+    "id": 2,
+    "name": "Usage",
+    "description": "Usage meters for service level users",
+    "service": "getUsage"
+},{
+    "id": 3,
+    "name": "Service selector",
+    "description": "Usage meters for service level users"
+},{
+    "id": 4,
+    "name": "Billing summary",
+    "description": "Usage meters for service level users"
+},{
+    "id": 5,
+    "name": "Voicemail",
+    "description": "Usage meters for service level users"
+},{
+    "id": 6,
+    "name": "Replace Sim",
+    "description": "Usage meters for service level users"
+},{
+    "id": 7,
+    "name": "New module",
+    "description": "My very special module"
+}]

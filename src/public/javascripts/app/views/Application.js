@@ -6,14 +6,17 @@ define(["backbone", "underscore", "d3"], function(Backbone, _, d3) {
             var self = this;
 
             self.vis = d3.select(this.el);
-            self.servicesCollection = this.options.services;
+            self.servicesCollection = self.options.services;
+            console.log(self.options.services);
             self.servicesData = self.servicesCollection.models;
+            console.log(self.servicesCollection.models);
             self.modulesCollection = self.collection;
             self.modulesData = self.modulesCollection.models;
+            console.log(self.modulesCollection.models);
 
             self.config = {
-                w: 960,
-                h: 500,
+                w: 1960,
+                h: 800,
                 fill: d3.scale.category10()
             };
 
@@ -32,14 +35,15 @@ define(["backbone", "underscore", "d3"], function(Backbone, _, d3) {
                 .size([self.config.w, self.config.h])
 
 
-            self.linksData = [{
-                source: self.modulesCollection.where({
-                    name: "Login"
-                })[0],
-                target: self.servicesCollection.where({
-                    name: "getUsage"
-                })[0]
-            }];
+            self.linksData = [];
+//            [{
+//                source: self.modulesCollection.where({
+//                    name: "Login"
+//                })[0],
+//                target: self.servicesCollection.where({
+//                    name: "getUsage"
+//                })[0]
+//            }];
 
 
 
@@ -60,28 +64,30 @@ define(["backbone", "underscore", "d3"], function(Backbone, _, d3) {
 
             var self = this;
 
+            console.log(self.servicesData);
             self.services = self.monitor.selectAll(".service")
                 .data(self.servicesData)
                 .enter()
                 .append("g")
                 .attr("cx", function(d) { return d.x; })
                 .attr("cy", function(d) { return d.y; })
-                .attr("r", 150)
+                .attr("r", 50)
                 .call(self.force.drag);
 
 
             self.services
                 .append("rect")
                 .attr("class", "service")
-                .attr("width", 200)
+                .attr("width", 250)
                 .attr("height", 50)
-                .attr("y", function(d, i) { return (i+1) * 55 })
+                .attr("y", function(d, i) { return (i+1) * 5 })
                 .style("fill", "white")
                 .style("stroke", "blue")
                 .style("stroke-width", 5);
 
             self.services
                 .append("text")
+                .attr("y", function(d, i) { return (i+1) * 5 + 25 })
                 .text(function(d){ return d.get("name")})
 
 

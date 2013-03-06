@@ -1,14 +1,17 @@
 define(["backbone"], function(Backbone) {
 
     return Backbone.Model.extend({
-       initialize: function() {
+        initialize: function() {
 
-       },
-        defaults: {
-            id: new Number(),
-            name: new String(),
-            description: new String()
-        }
+        },
+
+        url: "http://localhost:8089/module"
+
+//        defaults: {
+//            id: new Number(),
+//            name: new String(),
+//            description: new String()
+//        }
     });
 
 });
