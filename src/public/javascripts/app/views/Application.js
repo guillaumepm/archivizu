@@ -10,10 +10,12 @@ define(["backbone", "underscore", "d3"], function(Backbone, _, d3) {
             self.servicesData = self.servicesCollection.models;
             self.modulesCollection = self.collection;
             self.modulesData = self.modulesCollection.models;
+            self.linksCollection = self.options.links;
+            self.linksData = self.linksCollection.toJSON();
 
             self.config = {
                 w: 960,
-                h: 500,
+                h: 800,
                 fill: d3.scale.category10()
             };
 
@@ -25,21 +27,12 @@ define(["backbone", "underscore", "d3"], function(Backbone, _, d3) {
 
             self.force = d3.layout.force()
                 .nodes(_.union(self.modulesData, self.servicesData))
-//                .links([{source: 0, target: 3}])
+//                .links(self.linksData)
                 .gravity(.05)
-                .distance(300)
+                .distance(100)
                 .charge(-300)
                 .size([self.config.w, self.config.h])
 
-
-            self.linksData = [{
-                source: self.modulesCollection.where({
-                    name: "Login"
-                })[0],
-                target: self.servicesCollection.where({
-                    name: "getUsage"
-                })[0]
-            }];
 
 
 
@@ -64,24 +57,21 @@ define(["backbone", "underscore", "d3"], function(Backbone, _, d3) {
                 .data(self.servicesData)
                 .enter()
                 .append("g")
-                .attr("cx", function(d) { return d.x; })
-                .attr("cy", function(d) { return d.y; })
-                .attr("r", 150)
                 .call(self.force.drag);
 
 
             self.services
                 .append("rect")
                 .attr("class", "service")
-                .attr("width", 200)
-                .attr("height", 50)
-                .attr("y", function(d, i) { return (i+1) * 55 })
-                .style("fill", "white")
-                .style("stroke", "blue")
-                .style("stroke-width", 5);
+                .attr("width", 150)
+                .attr("height", 30)
+//                .attr("cy", function(d, i) { return (i+1) * 55 });
 
             self.services
                 .append("text")
+                .attr("text-anchor", "middle")
+                .attr("x", function(d) { return d.x; })
+                .attr("y", function(d) { return d.y; })
                 .text(function(d){ return d.get("name")})
 
 
@@ -113,6 +103,7 @@ define(["backbone", "underscore", "d3"], function(Backbone, _, d3) {
 
             self.modules
                 .append("text")
+                .attr("text-anchor", "middle")
                 .text(function(d) {return d.get("name");})
 
 
@@ -129,13 +120,6 @@ define(["backbone", "underscore", "d3"], function(Backbone, _, d3) {
 //                        .attr("r", 150)
                         .style("stroke-width", 3);
 
-                    self.services
-                        .select(function(d) {
-                            return d.name === e.service ? this : null;
-                        })
-                        .transition()
-                        .duration(500)
-                        .attr("r", 200);
 
 
                 })
@@ -166,22 +150,33 @@ define(["backbone", "underscore", "d3"], function(Backbone, _, d3) {
             self.renderModules();
 
             self.force
-                .links(self.linksData)
-                .linkStrength(0)
+//                .links(self.linksData)
+//                .linkStrength(0)
                 .start();
+
+            var updateLink = function() {
+                this.attr("x1", function(d) { return d.source.x; })
+                    .attr("y1", function(d) { return d.source.y; })
+                    .attr("x2", function(d) { return d.target.x; })
+                    .attr("y2", function(d) { return d.target.y; })
+                    .attr("style", "stroke:rgb(255,0,0);stroke-width:2;");
+            };
 
             self.links = self.monitor.selectAll("line")
                 .data(self.linksData)
                 .enter().append("line")
-                .attr("fill", "#000000")
-                .attr("x1", function(d) { return d.source.x; })
-                .attr("y1", function(d) { return d.source.y; })
-                .attr("x2", function(d) { return d.target.x; })
-                .attr("y2", function(d) { return d.target.y; });
+                .attr("fill", "#000000");
+
+//            self.links.call(updateLink());
+
+
 //
             self.force.on("tick", function(e) {
                 self.modules.attr("transform", function(d) { return "translate(" + d.x + "," + d.y + ")"; });
                 self.services.attr("transform", function(d) { return "translate(" + d.x + "," + d.y + ")"; });
+//console.log(self.links);
+                self.links.call(updateLink);
+
             });
 
             d3.select("body").on("click", function() {

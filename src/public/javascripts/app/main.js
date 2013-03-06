@@ -5,8 +5,9 @@ require([
     "d3",
     "collections/Modules",
     "collections/Services",
+    "collections/Links",
     "views/Application"
-], function($, _, Backbone, d3, Modules_collection, Services_collection, Application_view) {
+], function($, _, Backbone, d3, Modules_collection, Services_collection, Links_collection, Application_view) {
 
     var services_collection = new Modules_collection([{
         id: 1,
@@ -46,10 +47,40 @@ require([
         description: "Usage meters for service level users"
     }]);
 
+    var links_collection = new Links_collection([
+        {
+            source: modules_collection.where({id: 1})[0],
+            target: services_collection.where({id: 1})[0]
+        },{
+            source: modules_collection.where({id: 1})[0],
+            target: services_collection.where({id: 2})[0]
+        }, {
+            source: modules_collection.where({id: 2})[0],
+            target: services_collection.where({id: 1})[0]
+        },{
+            source: modules_collection.where({id: 3})[0],
+            target: services_collection.where({id: 1})[0]
+        },{
+            source: modules_collection.where({id: 4})[0],
+            target: services_collection.where({id: 2})[0]
+        },{
+            source: modules_collection.where({id: 5})[0],
+            target: services_collection.where({id: 2})[0]
+        },{
+            source: modules_collection.where({id: 6})[0],
+            target: services_collection.where({id: 2})[0]
+        },
+        {
+            source: modules_collection.where({id: 3})[0],
+            target: modules_collection.where({id: 5})[0]
+        }
+    ]);
+
     var application_view = new Application_view({
         el: "#main",
         collection: modules_collection,
-        services: services_collection
+        services: services_collection,
+        links: links_collection
     });
 
     window.c = modules_collection;
