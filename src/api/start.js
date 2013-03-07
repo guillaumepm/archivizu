@@ -6,6 +6,11 @@ var restify = require("restify"),
 //    Module = require("../public/javascripts/app/modules/Module");
 var xmlParser = require("xml2json");
 var Log = require('util');
+
+var services = require("./services");
+
+
+
 var server = restify.createServer({
 
 });
@@ -295,7 +300,26 @@ function loadServices(req, res, next) {
 
 
 
+function getServicesList(data) {
+    var inJson = xmlParser.toJson(data, {object: true});
+    var outJson = new Array();
+    var loop = 0;
+    inJson.deploymentArchitecture.Cluster.forEach(function(cluster) {
+        if (cluster.AppServer.WebService instanceof Array) {
+            cluster.AppServer.WebService.forEach(function(webService) {
 
+                loop++;
+                outJson.push({
+                    id: loop,
+                    name: webService.name
+                });
+
+            });
+        }
+    });
+    Log.log(JSON.stringify(outJson));
+    return outJson;
+}
 
 
 
@@ -311,22 +335,15 @@ function getTransformedXmlAsJSON(data) {
                 if (webService.Operation instanceof Array) {
                     webService.Operation.forEach(function(operation) {
                         loop++;
-//                        if (loop++ < 10) {
                         outJson.push({
                             id: loop,
                             belongsTo: webService.name,
                             name: operation.name
                         });
-//                        }
-//                        Log.log("new line:");
-//                        Log.log(JSON.stringify(operation));
                     });
                 }
             });
         }
-//        outJson.push({
-//
-//        })
     });
     Log.log(JSON.stringify(outJson));
     return outJson;

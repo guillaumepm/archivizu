@@ -7,12 +7,11 @@ define(["backbone", "underscore", "d3"], function(Backbone, _, d3) {
 
             self.vis = d3.select(this.el);
             self.servicesCollection = self.options.services;
-            console.log(self.options.services);
             self.servicesData = self.servicesCollection.models;
-            console.log(self.servicesCollection.models);
             self.modulesCollection = self.collection;
             self.modulesData = self.modulesCollection.models;
-            console.log(self.modulesCollection.models);
+
+            console.log(self.servicesCollection.length);
 
             self.config = {
                 w: 960,
