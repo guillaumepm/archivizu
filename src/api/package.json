@@ -7,6 +7,8 @@
         "restify": "1.4.4",
         "backbone": "*",
         "assert-plus": "*",
-        "xml2json": "*"
+        "xml2json": "*",
+        "java": "*",
+        "cloneextend": "*"
     }
 }
