@@ -1,4 +1,7 @@
-node_modules/
+node_modules
 *.jar
 *.json
 *.xml
+*.swp
+.idea
+npm-debug.log

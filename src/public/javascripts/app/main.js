@@ -5,9 +5,10 @@ require([
     "d3",
     "collections/Modules",
     "collections/Services",
+    "collections/Links",
     "views/Application",
     "models/Module"
-], function($, _, Backbone, d3, Modules_collection, Services_collection, Application_view, Module_model) {
+], function($, _, Backbone, d3, Modules_collection, Services_collection, Links_collection, Application_view, Module_model) {
 
 //    var services_collection = new Modules_collection([{
 //        id: 1,
@@ -48,25 +49,31 @@ require([
 //    }]);
     var services_collection = new Services_collection();
     var modules_collection = new Modules_collection();
+    var links_collection = new Links_collection();
     modules_collection.fetch({
         success: function(modules) {
             console.log("modules_collection");
             console.log(modules_collection.models);
             console.log(modules);
             services_collection.fetch({
-                success: function(services) {
-                    var application_view = new Application_view({
+	        success: function(services) {
+            		links_collection.fetch({
+				success: function(links) {
+					var application_view = new Application_view({
                         el: "#main",
                         collection: modules_collection,
-                        services: services_collection
+                        services: services_collection,
+                        links: links_collection
                     });
-                    console.log("services_collection");
-                    console.log(services_collection.models);
-                    console.log(services);
+                    console.log("links_collection");
+                    console.log(links_collection.models);
+                    console.log(links);
 
                     window.c = modules_collection;
                     application_view.render();
                 }
+        });
+}
         });
         }
     });

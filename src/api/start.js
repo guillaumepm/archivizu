@@ -7,21 +7,14 @@ var restify = require("restify"),
 var xmlParser = require("xml2json");
 var Log = require('util');
 var ce = require('cloneextend');
-var config = require('./config');
-var env = 'st';
-var domain = 'esb_online';
+var services = require('./services');
+var osb = require('./osb');
+
+
 var server = restify.createServer({
 
 });
 
-var java = require("java");
-// OSB: Only setup classpath once
-java.classpath.push("configfwk-1.1.0.0.jar");
-java.classpath.push("sb-kernel-impl-1.1.3.0.jar");
-java.classpath.push("sb-kernel-api-3.0.jar");
-java.classpath.push("sb-kernel-common-1.1.3.0.jar");
-java.classpath.push("wlfullclient-10.3.0.jar");
-java.classpath.push("standalone_client-11.1.1.jar");
 
 
 
@@ -272,6 +265,8 @@ function loadServices(req, res, next) {
     req.log.info('Loading services...');
     Log.log('cLoading services...');
     req.services = require('./myData/allServices.json');
+    req.links = require('./myData/allLinks.json');
+    next();
 }
 
 
@@ -296,26 +291,54 @@ function convertBlowtorchToJson() {
         }
 
 //        Log.log(xmlParser.toJson(data));
-        fs.writeFile('./myData/allServices.json', JSON.stringify(getTransformedXmlAsJSON(data)), function (err) {
+	var ret = getTransformedXmlAsJSON(data)
+        fs.writeFile('./myData/allServices.json', JSON.stringify(ret.services), function (err) {
             if (err) {
                 Log.warn(err, 'createTodo: unable to save');
             } else {
                 Log.log("Loading allServices.json");
             }
         });
+        fs.writeFile('./myData/allLinks.json', JSON.stringify(ret.links), function (err) {
+            if (err) {
+                Log.warn(err, 'createTodo: unable to save');
+            } else {
+                Log.log("Saved allLinks.json");
+            }
+        });
     });
+}
+
+
+function getServicesList(data) {
+    var inJson = xmlParser.toJson(data, {object: true});
+    var outJson = new Array();
+    var loop = 0;
+    inJson.deploymentArchitecture.Cluster.forEach(function(cluster) {
+        if (cluster.AppServer.WebService instanceof Array) {
+            cluster.AppServer.WebService.forEach(function(webService) {
+
+                loop++;
+                outJson.push({
+                    id: loop,
+                    name: webService.name
+                });
+
+            });
+        }
+    });
+    Log.log(JSON.stringify(outJson));
+    return outJson;
 }
 
 
 
 
 
-
-
-
 function getTransformedXmlAsJSON(data) {
-	var inJson = xmlParser.toJson(data, {object: true});
-	var outJson = {};
+	var inJson = xmlParser.toJson(data, {object: true, sanitize: false});
+	var opJson = {};
+	var linksJson = [];
 	var loop = 0;
 	inJson.deploymentArchitecture.Cluster.forEach(function(cluster) {
         	if (cluster.AppServer.WebService instanceof Array) {
@@ -327,9 +350,16 @@ function getTransformedXmlAsJSON(data) {
 						loop++;
 						var oname = operation.name.replace(/\(.*/,'');
 						operations[oname] = {
-							id: loop,
+							id: operation.name,
 							name: oname
 						};
+						if (operation.CodeBlock != undefined && operation.CodeBlock.Downstream != undefined) {
+Log.log("To: " + operation.CodeBlock.Downstream.To);
+							linksJson.push({
+								source: operation.name,
+								target: operation.CodeBlock.Downstream.To
+							});
+						}
 					});
 					webservices[webService.name] = {
 						name: webService.name,
@@ -337,17 +367,14 @@ function getTransformedXmlAsJSON(data) {
 					};
 				}
 			});
-			outJson[cluster.name] = {
+			opJson[cluster.name] = {
 				name: cluster.name,
 				webservices: webservices
 			};
         	}
-//        outJson.push({
-//
-//        })
     });
-    Log.log(JSON.stringify(outJson));
-    return outJson;
+    //Log.log(JSON.stringify(opJson));
+    return {services: opJson, links: linksJson};
 }
 
 
@@ -370,7 +397,42 @@ function listServices(req, res, next) {
     Log.log('cList services...');
 //    assert.arrayOfObjects(req.modules, 'req.modules');
 
-    res.send(200, req.services);
+Log.log('Or, Is it here?');
+	var outJson = [];
+	var loop = 0;
+	for (var clusterKey in req.services) {
+		for (var wsKey in req.services[clusterKey].webservices) {
+Log.log('clusterKey: ' + clusterKey);
+Log.log('wsKey: ' + wsKey);
+			for (var operationKey in req.services[clusterKey].webservices[wsKey].operations) {
+Log.log('operationKey: ' + operationKey);
+				var operation = req.services[clusterKey].webservices[wsKey].operations[operationKey];
+				if (operation.name == undefined) {
+					Log.log('WARN: operation.name is empty - ' + operationKey);
+					continue;
+				}
+				var oname = operation.name.replace(/\(.*/,'');
+				outJson.push({
+					id: operation.id,
+					name: oname
+				});
+			}
+		}
+	}
+	Log.log('Is it here?');
+    res.send(200, outJson);
+    //res.send(200, req.services);
+    next();
+}
+
+
+
+function listLinks(req, res, next) {
+    req.log.info('List links...');
+    Log.log('cList links...');
+//    assert.arrayOfObjects(req.modules, 'req.modules');
+
+    res.send(200, req.links);
     next();
 }
 
@@ -384,86 +446,6 @@ function listServices(req, res, next) {
 
 
 
-
-
-
-
-
-
-
-function getOSBConfig(env, domain) {
-	// Imports
-	var JMXServiceURL = java.import('javax.management.remote.JMXServiceURL');
-	var DomainRuntimeServiceMBean = java.import('weblogic.management.mbeanservers.domainruntime.DomainRuntimeServiceMBean');
-	var Hashtable = java.import('java.util.Hashtable');
-	var Context = java.import('javax.naming.Context');
-	var JMXConnectorFactory = java.import('javax.management.remote.JMXConnectorFactory');
-	var JMXConnector = java.import('javax.management.remote.JMXConnector');
-	var ALSBConfigurationMBean = java.import('com.bea.wli.sb.management.configuration.ALSBConfigurationMBean');
-	var ObjectName = java.import('javax.management.ObjectName');
-	var Collections = java.import('java.util.Collections')
-	var EnvValueQuery = java.import('com.bea.wli.config.env.EnvValueQuery');
-	var Iterator = java.import('java.util.Iterator');
-	var QualifiedEnvValue = java.import('com.bea.wli.config.env.QualifiedEnvValue');
-	var MBeanServerInvocationHandler = java.import('weblogic.management.jmx.MBeanServerInvocationHandler');
-	var Refs = java.import('com.bea.wli.sb.util.Refs');
-	var EnvValueTypes = java.import('com.bea.wli.sb.util.EnvValueTypes');
-
-	// Main
-	var admin_server = config[env].osb_domains[domain].admin_server
-	var serviceURL = new JMXServiceURL("t3", admin_server.hostname, admin_server.port,
-                                "/jndi/" + DomainRuntimeServiceMBean.MBEANSERVER_JNDI_NAME);
-	var h = new Hashtable();
-	var username = admin_server.username;
-	var password = admin_server.password;
-	h.putSync(Context.SECURITY_PRINCIPAL, username);
-	if (password == null) password = username;
-	h.putSync(Context.SECURITY_CREDENTIALS, password);
-	h.putSync(JMXConnectorFactory.PROTOCOL_PROVIDER_PACKAGES,
-                                "weblogic.management.remote");
-	var conn = JMXConnectorFactory.connectSync(serviceURL, h);
-	var mbconn = conn.getMBeanServerConnectionSync();
-
-	var domainService =
-                        MBeanServerInvocationHandler.newProxyInstanceSync(
-                                        mbconn, new ObjectName(DomainRuntimeServiceMBean.OBJECT_NAME));
-	var alsbCore = domainService.findServiceSync(
-                                        ALSBConfigurationMBean.NAME,
-                                        ALSBConfigurationMBean.TYPE, null);
-	var resourceSet = Collections.singletonSync(Refs.BUSINESS_SERVICE_TYPE);
-
-	var evquery = new EnvValueQuery(
-                                resourceSet, // null means all resource types
-                                Collections.singletonSync(EnvValueTypes.SERVICE_URI), // envValueTypes (i.e. search URIs)
-                                null, //Collections.singleton(serviceRef), // refsToSearch
-                                false, // includeOnlyModifiedResources
-                                null, // searchString
-                                false // isCompleteMatch
-                        );
-	var results = alsbCore.findEnvValuesSync(evquery);
-	var outJson = {};
-	outJson[domain] = { webservices: {} };
-	results.toArraySync().forEach(function(result) {
-		var webservice = result.getOwnerSync().getFullNameSync().replace(/\/.*$/,'');
-		var operation = result.getOwnerSync().getFullNameSync().replace(/^.*\//,'');
-		var endpoint = result.getValueSync();
-		if (outJson[domain].webservices[webservice] == undefined) {
-			outJson[domain].webservices[webservice] = { operations: {} };
-		}
-		outJson[domain].webservices[webservice].operations[operation] = {
-			endpoint: endpoint
-		}
-//		Log.log(result.getOwnerSync().getFullNameSync() + "\t" + result.getValueSync());
-	});
-	Log.log(JSON.stringify(outJson));
-        fs.writeFile('./myData/allOSBConfig.json', JSON.stringify(outJson), function (err) {
-            if (err) {
-                Log.warn(err, 'createTodo: unable to save');
-            } else {
-                Log.log("Saved allOSBConfig.json");
-            }
-        });
-}
 
 
 
@@ -502,6 +484,7 @@ server.head('/container/:name', getContainer);
 server.use(loadModules);
 server.use(loadServices);
 server.get('/service', listServices);
+server.get('/link', listLinks);
 
 server.get('/module', listModules);
 server.head('/module', listModules);
@@ -524,7 +507,9 @@ server.get('/', function root(req, res, next) {
         'GET /module',
         'GET /module/:name',
         'GET /service',
-        'GET /service/:name'
+        'GET /service/:name',
+        'GET /link',
+        'GET /link/:name'
     ];
     res.send(200, routes);
     next();
@@ -535,13 +520,22 @@ server.listen("8089", function() {
     console.log('%s listening at %s', server.name, server.url);
 });
 
-/*
 convertBlowtorchToJson();
+/*
 getOSBConfig('st', 'esb_online');
+outJson = osb.getOSBBusinessServiceEndpoints('st', 'esb_online');
+fs.writeFile('./myData/allOSBConfig.json', JSON.stringify(outJson), function (err) {
+    if (err) {
+        Log.warn(err, 'createTodo: unable to save');
+    } else {
+        var services = require('./myData/allServices.json');
+        var osbconfig = require('./myData/allOSBConfig.json');
+        var result = ce.extend(services, osbconfig);
+//        Log.log(JSON.stringify(result, undefined, 2));
+        Log.log("Saved allOSBConfig.json");
+    }
+});
+
 */
 
 
-var services = require('./myData/allServices.json');
-var osbconfig = require('./myData/allOSBConfig.json');
-var result = ce.extend(services, osbconfig);
-Log.log(JSON.stringify(result, undefined, 2));

@@ -7,43 +7,75 @@ define(["backbone", "underscore", "d3"], function(Backbone, _, d3) {
 
             self.vis = d3.select(this.el);
             self.servicesCollection = self.options.services;
-            console.log(self.options.services);
             self.servicesData = self.servicesCollection.models;
-            console.log(self.servicesCollection.models);
             self.modulesCollection = self.collection;
             self.modulesData = self.modulesCollection.models;
-            console.log(self.modulesCollection.models);
+            self.linksCollection = self.options.links;
+            self.linksDataC = self.linksCollection.models;
+
+            console.log(self.servicesCollection.length);
 
             self.config = {
-                w: 1960,
-                h: 800,
+                w: 960,
+                h: 600,
                 fill: d3.scale.category10()
             };
+
+console.log("1-1-1");
+self.linksData = new Array();
+var loop = 0;
+self.linksDataC.forEach(function(conn) {
+if (self.servicesCollection.where({ id: conn.attributes.source })[0] != undefined && self.servicesCollection.where({ id: conn.attributes.target })[0] != undefined) {
+self.linksData.push({
+                source: self.servicesCollection.where({
+                    id: conn.attributes.source
+                })[0],
+                target: self.servicesCollection.where({
+                    id: conn.attributes.target
+                })[0]
+	});
+}
+});
+console.log(self.linksData);
+//self.linksData = new Array();
+//self.linksData.push(asdf);
+//console.log(self.linksData[0].source);
+//console.log(self.linksData[0].target);
+/*
+            self.linksData =
+            [{
+                source: self.modulesCollection.where({
+                    name: "Login"
+                })[0],
+                target: self.servicesCollection.where({
+                    name: "getUsage"
+                })[0]
+            }];
+console.log(self.linksData);
+*/
 
 
             self.monitor = self.vis.append("svg:svg")
                 .attr("width", self.config.w)
                 .attr("height", self.config.h);
+ // 		.append("svg:g")
+//	   .attr("transform", "translate(" + self.config.w / 4 + "," + self.config.h / 3 + ")");
+
 
 
             self.force = d3.layout.force()
                 .nodes(_.union(self.modulesData, self.servicesData))
+    .gravity(0.06)
+    .charge(-150)
+    .linkDistance(40)
+
 //                .links([{source: 0, target: 3}])
-                .gravity(.05)
-                .distance(300)
-                .charge(-300)
+//                .gravity(.01)
+//                .distance(5)
                 .size([self.config.w, self.config.h])
+//                .charge(-10)
 
 
-            self.linksData = [];
-//            [{
-//                source: self.modulesCollection.where({
-//                    name: "Login"
-//                })[0],
-//                target: self.servicesCollection.where({
-//                    name: "getUsage"
-//                })[0]
-//            }];
 
 
 
@@ -51,12 +83,12 @@ define(["backbone", "underscore", "d3"], function(Backbone, _, d3) {
 
 
         },
-        getModulePositionX: function(d) {
-          return d.get("id") * 100;
-        },
-        getModulePositionY: function(d) {
-            return d.get("id") * 100;
-        },
+//        getModulePositionX: function(d) {
+//          return d.get("id") * 100;
+//        },
+//        getModulePositionY: function(d) {
+//            return d.get("id") * 100;
+//        },
         getName: function(d) {
             return d.get("name")
         },
@@ -78,16 +110,16 @@ define(["backbone", "underscore", "d3"], function(Backbone, _, d3) {
             self.services
                 .append("rect")
                 .attr("class", "service")
-                .attr("width", 250)
-                .attr("height", 50)
-                .attr("y", function(d, i) { return (i+1) * 5 })
+                .attr("width", 20)
+                .attr("height", 10)
+//                .attr("y", function(d, i) { return (i+1) * 5 })
                 .style("fill", "white")
                 .style("stroke", "blue")
                 .style("stroke-width", 5);
 
             self.services
                 .append("text")
-                .attr("y", function(d, i) { return (i+1) * 5 + 25 })
+//                .attr("y", function(d, i) { return (i+1) * 5 + 25 })
                 .text(function(d){ return d.get("name")})
 
 
@@ -170,24 +202,47 @@ define(["backbone", "underscore", "d3"], function(Backbone, _, d3) {
 
             self.renderServices();
             self.renderModules();
+            self.links = self.monitor.selectAll("line")
+                .data(self.linksData, function(d) { return d.target.id; })
+    .enter().append("svg:line");
+
+//                .data(self.linksData, function(d) { return d.target.id; });
+/*
+  self.links.enter().insert("svg:line", ".node")
+      .attr("x1", function(d) { return d.source.x; })
+      .attr("y1", function(d) { return d.source.y; })
+      .attr("x2", function(d) { return d.target.x; })
+      .attr("y2", function(d) { return d.target.y; });
+*/
+
+  // Exit any old links.
+//  self.links.exit().remove();
 
             self.force
-                .links(self.linksData)
-                .linkStrength(0)
+//                .links(self.linksData)
+//                .linkStrength(0)
                 .start();
 
+
+/*
             self.links = self.monitor.selectAll("line")
                 .data(self.linksData)
                 .enter().append("line")
                 .attr("fill", "#000000")
-                .attr("x1", function(d) { return d.source.x; })
+                .attr("x1", function(d) { console.log(d.source.x); return d.source.x; })
                 .attr("y1", function(d) { return d.source.y; })
-                .attr("x2", function(d) { return d.target.x; })
+                .attr("x2", function(d) {  console.log(d.target.x);return d.target.x; })
                 .attr("y2", function(d) { return d.target.y; });
+*/
 //
             self.force.on("tick", function(e) {
                 self.modules.attr("transform", function(d) { return "translate(" + d.x + "," + d.y + ")"; });
                 self.services.attr("transform", function(d) { return "translate(" + d.x + "," + d.y + ")"; });
+  self.links.attr("x1", function(d) { return d.source.x; })
+      .attr("y1", function(d) { return d.source.y; })
+      .attr("x2", function(d) { return d.target.x; })
+      .attr("y2", function(d) { return d.target.y; });
+
             });
 
             d3.select("body").on("click", function() {

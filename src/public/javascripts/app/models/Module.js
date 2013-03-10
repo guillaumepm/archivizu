@@ -5,7 +5,7 @@ define(["backbone"], function(Backbone) {
 
         },
 
-        url: "http://localhost:8089/module"
+        url: "http://pehr.johansson.optusnet.com.au:8089/module"
 
 //        defaults: {
 //            id: new Number(),
