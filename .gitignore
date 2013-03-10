@@ -1,7 +1,7 @@
-node_modules/
-/node_modules/
-/node_modules
-npm-debug.log
+node_modules
+*.jar
+*.json
+*.xml
+*.swp
 .idea
-allServices.xml
-allServices.json
+npm-debug.log
