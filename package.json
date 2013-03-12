@@ -8,6 +8,8 @@
         "backbone": "*",
         "connect": "*",
         "assert-plus": "*",
-        "xml2json": "*"
+        "xml2json": "*",
+        "java": "*",
+        "cloneextend": "*"
     }
 }

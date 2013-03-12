@@ -4,10 +4,10 @@ define(["backbone"], function(Backbone) {
         initialize: function() {
 
         },
-        url: "http://pehr.johansson.optusnet.com.au:8089/service"
+        url: "http://pehr.johansson.optusnet.com.au:8089/link"
 //        defaults: {
-//            service: ""
-//
+//            source: new Object(),
+//            target: new Object()
 //        }
     });
 

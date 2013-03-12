@@ -1,0 +1,14 @@
+{"<env>": {
+	"osb_domains": {
+		"<my_osb_domain>": {
+			"name": "<my_osb_domain>",
+			"admin_server": {
+				"hostname": "my_admin_server.com",
+				"port": 7001,
+				"username": "weblogic",
+				"password": "weblogic"
+			}
+		}
+	}
+}
+}

@@ -5,7 +5,7 @@ define(["backbone", "models/Service"], function(Backbone, Service_model) {
         initialize: function() {
 
         },
-        url: "http://localhost:8089/service"
+        url: "http://pehr.johansson.optusnet.com.au:8089/service"
     });
 
 });
